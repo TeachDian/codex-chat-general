@@ -35,7 +35,7 @@ Codex sessions can span many projects and models. The raw session data is useful
 - CSV export for filtered session data.
 - Copyable usage summary.
 - Settings/status panel with Codex home, local database path, parsed file count, unchanged file count, skipped file count, and last imported time.
-- Flat vector-style app icon for taskbar, shortcut, installer, and repository assets.
+- Simple black-and-white flat app icon for taskbar, shortcut, installer, and repository assets.
 - Root build folder with a ready-to-run Windows executable and installers.
 
 ## What Token Ledger Tracks
