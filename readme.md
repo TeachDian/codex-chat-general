@@ -15,6 +15,7 @@ Codex sessions can span many projects and models. The raw session data is useful
 - [About Token Ledger](about.md)
 - [Release and downloads](release.md)
 - [Contributing guide](contributing.md)
+- [GitHub Actions](docs/github-actions.md)
 - [Reporting problems and pull requests](docs/reporting-problems-and-pull-requests.md)
 - [Security policy](security.md)
 

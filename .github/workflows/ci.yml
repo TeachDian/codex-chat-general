@@ -1,0 +1,141 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  verify:
+    name: Verify app
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend tests
+        run: npm test
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run Rust scanner tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml --release usage::tests -- --nocapture
+
+  package-windows:
+    name: Package Windows x64
+    runs-on: windows-latest
+    needs: verify
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Tauri Windows package
+        run: npm run tauri build
+
+      - name: Stage release artifacts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $packageJson = Get-Content -LiteralPath 'package.json' | ConvertFrom-Json
+          $version = $packageJson.version
+          $artifactRoot = 'release-artifacts'
+          $portableName = "token-ledger-$version-windows-x64"
+          $portableRoot = Join-Path $artifactRoot $portableName
+          $targetRoot = 'src-tauri/target/release'
+
+          if (Test-Path -LiteralPath $artifactRoot) {
+            Remove-Item -LiteralPath $artifactRoot -Recurse -Force
+          }
+
+          New-Item -ItemType Directory -Force -Path $portableRoot | Out-Null
+
+          Copy-Item -LiteralPath (Join-Path $targetRoot 'token-ledger.exe') -Destination (Join-Path $portableRoot 'token-ledger.exe') -Force
+          Copy-Item -LiteralPath (Join-Path $targetRoot 'WebView2Loader.dll') -Destination (Join-Path $portableRoot 'WebView2Loader.dll') -Force
+          $portableReadme = Get-ChildItem -Path 'release-packages/*portable-readme.md' | Sort-Object Name -Descending | Select-Object -First 1
+
+          if (-not $portableReadme) {
+            throw 'Portable package readme was not found.'
+          }
+
+          Copy-Item -LiteralPath 'assets/token-ledger-flat-icon.png' -Destination (Join-Path $portableRoot 'token-ledger-flat-icon.png') -Force
+          Copy-Item -LiteralPath $portableReadme.FullName -Destination (Join-Path $portableRoot 'portable-readme.md') -Force
+          Copy-Item -LiteralPath 'readme.md' -Destination (Join-Path $portableRoot 'readme.md') -Force
+          Copy-Item -LiteralPath 'release.md' -Destination (Join-Path $portableRoot 'release.md') -Force
+          Copy-Item -LiteralPath 'about.md' -Destination (Join-Path $portableRoot 'about.md') -Force
+          Copy-Item -LiteralPath 'license.md' -Destination (Join-Path $portableRoot 'license.md') -Force
+
+          $portableZip = Join-Path $artifactRoot "$portableName-portable.zip"
+          Compress-Archive -LiteralPath $portableRoot -DestinationPath $portableZip -CompressionLevel Optimal
+          Remove-Item -LiteralPath $portableRoot -Recurse -Force
+
+          $setupInstaller = Get-ChildItem -Path (Join-Path $targetRoot 'bundle/nsis/*.exe') | Select-Object -First 1
+          $msiInstaller = Get-ChildItem -Path (Join-Path $targetRoot 'bundle/msi/*.msi') | Select-Object -First 1
+
+          if (-not $setupInstaller) {
+            throw 'NSIS setup installer was not produced.'
+          }
+
+          if (-not $msiInstaller) {
+            throw 'MSI installer was not produced.'
+          }
+
+          $setupOut = Join-Path $artifactRoot "token-ledger-$version-x64-setup.exe"
+          $msiOut = Join-Path $artifactRoot "token-ledger-$version-x64.msi"
+
+          Copy-Item -LiteralPath $setupInstaller.FullName -Destination $setupOut -Force
+          Copy-Item -LiteralPath $msiInstaller.FullName -Destination $msiOut -Force
+
+          $checksumPath = Join-Path $artifactRoot "token-ledger-$version-windows-x64-checksums-sha256.txt"
+          $hashTargets = @($portableZip, $setupOut, $msiOut)
+          $checksumLines = foreach ($target in $hashTargets) {
+            $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $target
+            "$($hash.Hash)  $(Split-Path -Leaf $target)"
+          }
+
+          Set-Content -LiteralPath $checksumPath -Value $checksumLines -Encoding ASCII
+
+      - name: Upload Windows package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: token-ledger-windows-x64-package
+          path: release-artifacts/*
+          if-no-files-found: error
+          retention-days: 30
