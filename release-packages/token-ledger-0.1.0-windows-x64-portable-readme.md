@@ -25,6 +25,5 @@ Token Ledger is local-first. It reads Codex session files from your machine and 
 ## Included Documents
 
 - `readme.md` - project overview.
-- `release.md` - release notes and checksums.
 - `license.md` - MIT License.
 - `about.md` - app background and goals.

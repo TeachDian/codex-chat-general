@@ -8,10 +8,10 @@ Choose one option:
 
 | File | Best For | Size |
 | --- | --- | ---: |
-| [token-ledger-0.1.0-windows-x64-portable.zip](release-packages/token-ledger-0.1.0-windows-x64-portable.zip) | Best portable download, no installer | 7,915,240 bytes |
-| [token-ledger-0.1.0-x64-setup.exe](token-ledger-build/token-ledger-0.1.0-x64-setup.exe) | Most Windows users | 5,499,904 bytes |
-| [token-ledger-0.1.0-x64.msi](token-ledger-build/token-ledger-0.1.0-x64.msi) | Windows installer deployment | 7,913,472 bytes |
-| [token-ledger.exe](token-ledger-build/token-ledger.exe) | Portable/manual run | 22,620,830 bytes |
+| [token-ledger-0.1.0-windows-x64-portable.zip](release-packages/token-ledger-0.1.0-windows-x64-portable.zip) | Best portable download, no installer | 7,914,912 bytes |
+| [token-ledger-0.1.0-x64-setup.exe](token-ledger-build/token-ledger-0.1.0-x64-setup.exe) | Most Windows users | 5,502,958 bytes |
+| [token-ledger-0.1.0-x64.msi](token-ledger-build/token-ledger-0.1.0-x64.msi) | Windows installer deployment | 7,917,568 bytes |
+| [token-ledger.exe](token-ledger-build/token-ledger.exe) | Portable/manual run | 22,621,546 bytes |
 
 For most portable users, download the zip package instead of downloading the exe and DLL separately.
 
@@ -59,10 +59,10 @@ Use SHA-256 to verify downloaded files:
 
 | File | SHA-256 |
 | --- | --- |
-| `token-ledger-0.1.0-windows-x64-portable.zip` | `482ECDDFEB652C423311B04DC8BCDAA272F8A8AE0398F5431485552FF9559971` |
-| `token-ledger.exe` | `7026C128DFB3213D0685CAEFA1EE4774B0B59B0297B1DABF9ED733B42EDBF364` |
-| `token-ledger-0.1.0-x64-setup.exe` | `ADC197EBB2A2307B166CB760A302247050EBF9DBBF5AA5847CE9B74A945923B5` |
-| `token-ledger-0.1.0-x64.msi` | `3F4E9A370C62F2B4DE5DD199C911108A54C78DD685649DFC60AB423AC9B26D7E` |
+| `token-ledger-0.1.0-windows-x64-portable.zip` | `976DA7307BB3EF788D44076C8F3189510CA574D7105D5C189249B517CFBDBB50` |
+| `token-ledger.exe` | `0EC67E680BF61D2178832F37A12BC029EEE3F287B8ABB6B03B9147952B9B77F8` |
+| `token-ledger-0.1.0-x64-setup.exe` | `A25DB9F0FDBC69094FC2AC1DE4F853C572376D466C1BCE6E3E430F2D484A1C75` |
+| `token-ledger-0.1.0-x64.msi` | `B0BB79BF65A8D8AAF73FB5B25EFBBCDFB1C2A662E75FFEA73CE017DEC30F8F70` |
 | `WebView2Loader.dll` | `8427B1FC58EC707813E5C0A51EB5D69397BB333250A7B891BE4D3B123F1E0F1C` |
 
 On Windows, verify a file with:

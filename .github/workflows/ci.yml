@@ -98,7 +98,6 @@ jobs:
           Copy-Item -LiteralPath 'assets/token-ledger-flat-icon.png' -Destination (Join-Path $portableRoot 'token-ledger-flat-icon.png') -Force
           Copy-Item -LiteralPath $portableReadme.FullName -Destination (Join-Path $portableRoot 'portable-readme.md') -Force
           Copy-Item -LiteralPath 'readme.md' -Destination (Join-Path $portableRoot 'readme.md') -Force
-          Copy-Item -LiteralPath 'release.md' -Destination (Join-Path $portableRoot 'release.md') -Force
           Copy-Item -LiteralPath 'about.md' -Destination (Join-Path $portableRoot 'about.md') -Force
           Copy-Item -LiteralPath 'license.md' -Destination (Join-Path $portableRoot 'license.md') -Force
 
