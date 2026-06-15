@@ -1,7 +1,33 @@
 {
   "name": "token-ledger",
-  "private": true,
   "version": "0.1.0",
+  "description": "Local-first desktop token usage tracker for Codex sessions, projects, models, cached tokens, and cost estimates.",
+  "license": "MIT",
+  "keywords": [
+    "codex-token-tracker",
+    "chatgpt-token-tracker",
+    "openai-token-usage",
+    "token-usage-dashboard",
+    "ai-token-tracker",
+    "llm-token-tracker",
+    "cached-token-tracker",
+    "codex-usage-monitor",
+    "openai-cost-tracker",
+    "ai-cost-estimator",
+    "prompt-token-counter",
+    "session-token-reports",
+    "project-token-reports",
+    "tauri-desktop-app",
+    "local-first-analytics"
+  ],
+  "homepage": "https://github.com/TeachDian/codex-chat-general#readme",
+  "bugs": {
+    "url": "https://github.com/TeachDian/codex-chat-general/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TeachDian/codex-chat-general.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

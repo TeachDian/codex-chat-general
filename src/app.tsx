@@ -17,6 +17,7 @@ import {
 import "./app.css";
 import { MetricCard } from "./components/metric-card";
 import { DailyCostTable } from "./components/daily-cost-table";
+import { BootSkeleton } from "./components/boot-skeleton";
 import { ModelCostTable } from "./components/model-cost-table";
 import { ModelShareChart } from "./components/model-share-chart";
 import { ProjectTable } from "./components/project-table";
@@ -474,11 +475,7 @@ function App() {
             </section>
           </>
         ) : (
-          <section className="loading-panel">
-            <RefreshCw size={22} />
-            <h2>Loading local usage</h2>
-            <p>Reading safe Codex session indexes and building the local ledger.</p>
-          </section>
+          <BootSkeleton />
         )}
       </section>
     </main>
