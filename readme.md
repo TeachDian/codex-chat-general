@@ -10,6 +10,14 @@ Token Ledger is not affiliated with OpenAI. It reads local Codex session data fr
 
 Codex sessions can span many projects and models. The raw session data is useful, but it is not easy to scan by day, project, model, or session without a dedicated tool. Token Ledger turns those local records into a readable dashboard that helps you understand usage patterns, compare projects, and estimate cost impact.
 
+## Project Pages
+
+- [About Token Ledger](about.md)
+- [Release and downloads](release.md)
+- [Contributing guide](contributing.md)
+- [Reporting problems and pull requests](docs/reporting-problems-and-pull-requests.md)
+- [Security policy](security.md)
+
 ## Features
 
 - Local desktop app built with Tauri, React, TypeScript, and Rust.
@@ -68,6 +76,8 @@ Token counts come from local Codex session records. Cost estimates are calculate
 ## Download And Run
 
 This repository currently includes Windows build artifacts in `token-ledger-build`.
+
+For the public download page, see [Token Ledger 0.1.0 Release](release.md).
 
 Useful files:
 
