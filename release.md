@@ -1,6 +1,8 @@
-# Token Ledger 0.1.0 Release
+# Token Ledger 0.1.0 Release Page
 
-This page lists the current downloadable Windows build for Token Ledger.
+This is the repository release page for Token Ledger `0.1.0`. It lists the current downloadable Windows build, checksums, install notes, and source links.
+
+GitHub Releases are not currently published from automation. The release assets are committed in this repository so users can download them directly without depending on GitHub Actions artifacts.
 
 ## Download For Windows
 
@@ -16,6 +18,12 @@ Choose one option:
 For most portable users, download the zip package instead of downloading the exe and DLL separately.
 
 All checksums are also available in [token-ledger-0.1.0-windows-x64-checksums-sha256.txt](release-packages/token-ledger-0.1.0-windows-x64-checksums-sha256.txt).
+
+## Release Tag
+
+Release tag: `v0.1.0`
+
+Source branch: `main`
 
 ## Recommended Install
 
@@ -81,3 +89,7 @@ Get-FileHash -Algorithm SHA256 .\token-ledger-0.1.0-x64-setup.exe
 ## Source
 
 The source code, license, and contribution docs are in this repository. Token Ledger is released under the MIT License.
+
+## Publishing Notes
+
+This repository does not run automatic GitHub Actions packaging. Maintainers should build and verify release artifacts locally, update this page, then tag the release commit.

@@ -12,7 +12,7 @@ Token Ledger is unofficial and is not affiliated with OpenAI. It is a community 
 - [Release and downloads](release.md)
 - [Contributing guide](contributing.md)
 - [Reporting problems and pull requests](docs/reporting-problems-and-pull-requests.md)
-- [GitHub Actions and packaging](docs/github-actions.md)
+- [Local verification and packaging](docs/local-verification.md)
 - [Security policy](security.md)
 - [License](license.md)
 
@@ -47,7 +47,7 @@ Token Ledger turns those local records into searchable, filterable reports. The 
 - Boot loading skeleton so the app does not look stuck while it scans and loads cached data.
 - Simple black-and-white flat vector icon for the app, taskbar, shortcut, and installer.
 - Windows portable package and installer artifacts.
-- GitHub issue templates, pull request template, and CI workflow for community contributions.
+- GitHub issue templates, pull request template, and local verification guidance for community contributions.
 
 ## How It Works
 
@@ -175,8 +175,8 @@ npm run tauri build -- --target x86_64-pc-windows-gnu
 - `public/` - frontend public assets.
 - `token-ledger-build/` - generated Windows executable and installer artifacts.
 - `release-packages/` - portable package and checksum manifest.
-- `docs/` - community, contribution, and GitHub Actions documentation.
-- `.github/` - issue templates, pull request template, and CI workflow.
+- `docs/` - community, contribution, and local verification documentation.
+- `.github/` - issue templates and pull request template.
 
 ## Community And Contributions
 
@@ -212,7 +212,7 @@ If you change the Rust scanner, also run:
 cargo test --manifest-path src-tauri\Cargo.toml --release usage::tests -- --nocapture
 ```
 
-GitHub Actions runs the main checks on pushes and pull requests. See [docs/github-actions.md](docs/github-actions.md).
+This repository does not run automatic GitHub Actions checks. See [docs/local-verification.md](docs/local-verification.md) for the local checks maintainers and contributors should run before pushing.
 
 ## Roadmap Ideas
 

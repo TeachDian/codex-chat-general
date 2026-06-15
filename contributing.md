@@ -54,7 +54,7 @@ npm run tauri build
 5. Update documentation when behavior changes.
 6. Run the relevant checks before opening a PR.
 7. Fill out the pull request template.
-8. Review the GitHub Actions result after pushing.
+8. Include the checks you ran in the PR description.
 
 ## Recommended Checks
 
@@ -73,7 +73,7 @@ cargo test --manifest-path src-tauri\Cargo.toml --release usage::tests -- --noca
 
 If you changed packaging or icons, also run a Tauri build for your platform.
 
-GitHub Actions also runs these checks on every push and pull request. See `docs/github-actions.md`.
+This repository does not run automatic GitHub Actions checks. See `docs/local-verification.md` for the local verification policy.
 
 ## Coding Guidelines
 
