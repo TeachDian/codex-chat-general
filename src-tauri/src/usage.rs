@@ -6,6 +6,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 use walkdir::WalkDir;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -38,15 +39,26 @@ pub struct SessionUsage {
     pub source_path: String,
     pub usage: TokenUsage,
     pub token_events: u64,
-    #[serde(skip)]
     pub usage_events: Vec<UsageEvent>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SourceFileImport {
+    pub source_path: String,
+    pub session_id: Option<String>,
+    pub modified_at: String,
+    pub size_bytes: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ImportResult {
     pub sessions: Vec<SessionUsage>,
     pub scanned_files: u64,
+    pub parsed_files: u64,
+    pub unchanged_files: u64,
     pub skipped_files: u64,
+    #[serde(skip)]
+    pub source_files: Vec<SourceFileImport>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -89,6 +101,8 @@ pub struct DashboardData {
     pub project_usage: Vec<ProjectUsage>,
     pub sessions: Vec<SessionUsage>,
     pub scanned_files: u64,
+    pub parsed_files: u64,
+    pub unchanged_files: u64,
     pub skipped_files: u64,
     pub codex_home: String,
     pub database_path: String,
@@ -218,14 +232,18 @@ pub fn parse_session_jsonl(path: &Path, content: &str) -> Option<SessionUsage> {
     })
 }
 
+#[cfg(test)]
 pub fn import_codex_sessions(codex_home: &Path) -> ImportResult {
     let titles = load_session_titles(codex_home);
     let mut sessions = Vec::new();
     let mut scanned_files = 0;
+    let mut parsed_files = 0;
     let mut skipped_files = 0;
+    let mut source_files = Vec::new();
 
     for file in safe_session_files(codex_home) {
         scanned_files += 1;
+        let source = source_file_import(&file, None);
         match fs::read_to_string(&file) {
             Ok(content) => {
                 if let Some(mut session) = parse_session_jsonl(&file, &content) {
@@ -233,6 +251,11 @@ pub fn import_codex_sessions(codex_home: &Path) -> ImportResult {
                         session.title = index_title.clone();
                     }
                     if session.token_events > 0 {
+                        parsed_files += 1;
+                        source_files.push(SourceFileImport {
+                            session_id: Some(session.id.clone()),
+                            ..source
+                        });
                         sessions.push(session);
                     }
                 }
@@ -244,7 +267,10 @@ pub fn import_codex_sessions(codex_home: &Path) -> ImportResult {
     ImportResult {
         sessions,
         scanned_files,
+        parsed_files,
+        unchanged_files: 0,
         skipped_files,
+        source_files,
     }
 }
 
@@ -253,11 +279,15 @@ pub fn refresh_database(db_path: &Path, codex_home: &Path) -> Result<DashboardDa
         fs::create_dir_all(parent)?;
     }
 
-    let import = import_codex_sessions(codex_home);
     let mut conn = Connection::open(db_path)?;
     ensure_schema(&conn)?;
-    let imported_at = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let imported_at = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true);
+    let import = import_changed_codex_sessions(&conn, codex_home)?;
     let transaction = conn.transaction()?;
+
+    for source_file in &import.source_files {
+        upsert_source_file(&transaction, source_file, &imported_at)?;
+    }
 
     for session in &import.sessions {
         upsert_session(&transaction, session, &imported_at)?;
@@ -265,12 +295,18 @@ pub fn refresh_database(db_path: &Path, codex_home: &Path) -> Result<DashboardDa
     }
 
     transaction.execute(
-        "DELETE FROM sessions WHERE last_imported_at <> ?1",
+        "DELETE FROM sessions WHERE id NOT IN (
+            SELECT session_id FROM source_files WHERE last_seen_at = ?1 AND session_id IS NOT NULL
+        )",
         params![imported_at],
     )?;
     transaction.execute(
         "DELETE FROM session_usage_events WHERE session_id NOT IN (SELECT id FROM sessions)",
         [],
+    )?;
+    transaction.execute(
+        "DELETE FROM source_files WHERE last_seen_at <> ?1",
+        params![imported_at],
     )?;
     transaction.commit()?;
 
@@ -278,6 +314,8 @@ pub fn refresh_database(db_path: &Path, codex_home: &Path) -> Result<DashboardDa
     Ok(build_dashboard(
         sessions,
         import.scanned_files,
+        import.parsed_files,
+        import.unchanged_files,
         import.skipped_files,
         codex_home,
         db_path,
@@ -286,26 +324,77 @@ pub fn refresh_database(db_path: &Path, codex_home: &Path) -> Result<DashboardDa
 }
 
 pub fn load_database(db_path: &Path, codex_home: &Path) -> Result<DashboardData, UsageError> {
-    if !db_path.exists() {
-        return refresh_database(db_path, codex_home);
+    refresh_database(db_path, codex_home)
+}
+
+fn import_changed_codex_sessions(
+    conn: &Connection,
+    codex_home: &Path,
+) -> Result<ImportResult, UsageError> {
+    let titles = load_session_titles(codex_home);
+    let mut sessions = Vec::new();
+    let mut source_files = Vec::new();
+    let mut scanned_files = 0;
+    let mut parsed_files = 0;
+    let mut unchanged_files = 0;
+    let mut skipped_files = 0;
+
+    for file in safe_session_files(codex_home) {
+        scanned_files += 1;
+        let current_source = source_file_import(&file, None);
+        let existing_source = load_source_file(conn, &current_source.source_path)?;
+
+        if let Some(existing) = existing_source.as_ref() {
+            if existing.modified_at == current_source.modified_at
+                && existing.size_bytes == current_source.size_bytes
+                && existing
+                    .session_id
+                    .as_deref()
+                    .map(|id| session_exists(conn, id))
+                    .transpose()?
+                    .unwrap_or(false)
+            {
+                unchanged_files += 1;
+                source_files.push(existing.clone());
+                continue;
+            }
+        }
+
+        match fs::read_to_string(&file) {
+            Ok(content) => {
+                if let Some(mut session) = parse_session_jsonl(&file, &content) {
+                    if let Some(index_title) = titles.get(&session.id) {
+                        session.title = index_title.clone();
+                    }
+                    if session.token_events > 0 {
+                        parsed_files += 1;
+                        source_files.push(SourceFileImport {
+                            session_id: Some(session.id.clone()),
+                            ..current_source
+                        });
+                        sessions.push(session);
+                    } else {
+                        source_files.push(current_source);
+                    }
+                } else {
+                    source_files.push(current_source);
+                }
+            }
+            Err(_) => {
+                skipped_files += 1;
+                source_files.push(existing_source.unwrap_or(current_source));
+            }
+        }
     }
 
-    let conn = Connection::open(db_path)?;
-    ensure_schema(&conn)?;
-    let sessions = load_sessions(&conn)?;
-
-    if sessions.is_empty() {
-        return refresh_database(db_path, codex_home);
-    }
-
-    Ok(build_dashboard(
+    Ok(ImportResult {
         sessions,
-        0,
-        0,
-        codex_home,
-        db_path,
-        Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-    ))
+        scanned_files,
+        parsed_files,
+        unchanged_files,
+        skipped_files,
+        source_files,
+    })
 }
 
 fn ensure_schema(conn: &Connection) -> rusqlite::Result<()> {
@@ -343,12 +432,47 @@ fn ensure_schema(conn: &Connection) -> rusqlite::Result<()> {
             PRIMARY KEY (session_id, event_index)
         );
 
+        CREATE TABLE IF NOT EXISTS source_files (
+            source_path TEXT PRIMARY KEY,
+            session_id TEXT,
+            modified_at TEXT NOT NULL,
+            size_bytes INTEGER NOT NULL,
+            last_seen_at TEXT NOT NULL
+        );
+
         CREATE INDEX IF NOT EXISTS idx_sessions_updated_at ON sessions(updated_at DESC);
         CREATE INDEX IF NOT EXISTS idx_sessions_project_name ON sessions(project_name);
         CREATE INDEX IF NOT EXISTS idx_usage_events_occurred_at ON session_usage_events(occurred_at);
         CREATE INDEX IF NOT EXISTS idx_usage_events_project_name ON session_usage_events(project_name);
+        CREATE INDEX IF NOT EXISTS idx_source_files_session_id ON source_files(session_id);
         "#,
     )
+}
+
+fn upsert_source_file(
+    conn: &Connection,
+    source_file: &SourceFileImport,
+    imported_at: &str,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        r#"
+        INSERT INTO source_files (source_path, session_id, modified_at, size_bytes, last_seen_at)
+        VALUES (?1, ?2, ?3, ?4, ?5)
+        ON CONFLICT(source_path) DO UPDATE SET
+            session_id = excluded.session_id,
+            modified_at = excluded.modified_at,
+            size_bytes = excluded.size_bytes,
+            last_seen_at = excluded.last_seen_at
+        "#,
+        params![
+            source_file.source_path,
+            source_file.session_id,
+            source_file.modified_at,
+            source_file.size_bytes as i64,
+            imported_at,
+        ],
+    )?;
+    Ok(())
 }
 
 fn upsert_session(
@@ -515,9 +639,38 @@ fn load_usage_events(conn: &Connection) -> rusqlite::Result<HashMap<String, Vec<
     Ok(events_by_session)
 }
 
+fn load_source_file(
+    conn: &Connection,
+    source_path: &str,
+) -> rusqlite::Result<Option<SourceFileImport>> {
+    let mut stmt = conn.prepare(
+        "SELECT source_path, session_id, modified_at, size_bytes FROM source_files WHERE source_path = ?1",
+    )?;
+    let mut rows = stmt.query_map(params![source_path], |row| {
+        Ok(SourceFileImport {
+            source_path: row.get(0)?,
+            session_id: row.get(1)?,
+            modified_at: row.get(2)?,
+            size_bytes: row.get::<_, i64>(3)? as u64,
+        })
+    })?;
+
+    rows.next().transpose()
+}
+
+fn session_exists(conn: &Connection, session_id: &str) -> rusqlite::Result<bool> {
+    conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM sessions WHERE id = ?1)",
+        params![session_id],
+        |row| row.get(0),
+    )
+}
+
 fn build_dashboard(
     sessions: Vec<SessionUsage>,
     scanned_files: u64,
+    parsed_files: u64,
+    unchanged_files: u64,
     skipped_files: u64,
     codex_home: &Path,
     db_path: &Path,
@@ -606,10 +759,36 @@ fn build_dashboard(
         project_usage,
         sessions,
         scanned_files,
+        parsed_files,
+        unchanged_files,
         skipped_files,
         codex_home: codex_home.to_string_lossy().to_string(),
         database_path: db_path.to_string_lossy().to_string(),
         last_imported_at: imported_at,
+    }
+}
+
+fn source_file_import(path: &Path, session_id: Option<String>) -> SourceFileImport {
+    let metadata = fs::metadata(path).ok();
+    SourceFileImport {
+        source_path: path.to_string_lossy().to_string(),
+        session_id,
+        modified_at: metadata
+            .as_ref()
+            .and_then(|metadata| metadata.modified().ok())
+            .map(system_time_key)
+            .unwrap_or_else(|| "unknown".to_string()),
+        size_bytes: metadata.map(|metadata| metadata.len()).unwrap_or(0),
+    }
+}
+
+fn system_time_key(time: SystemTime) -> String {
+    match time.duration_since(UNIX_EPOCH) {
+        Ok(duration) => format!("{}.{:09}", duration.as_secs(), duration.subsec_nanos()),
+        Err(error) => {
+            let duration = error.duration();
+            format!("-{}.{:09}", duration.as_secs(), duration.subsec_nanos())
+        }
     }
 }
 
@@ -888,6 +1067,8 @@ mod tests {
         let dashboard = build_dashboard(
             vec![session],
             1,
+            1,
+            0,
             0,
             Path::new("C:\\Users\\phili\\.codex"),
             Path::new("ledger.sqlite"),
@@ -933,5 +1114,49 @@ mod tests {
         let second = refresh_database(&db_path, &codex_home).unwrap();
         assert_eq!(second.sessions.len(), 0);
         assert_eq!(second.summary.total_tokens, 0);
+    }
+
+    #[test]
+    fn refresh_parses_only_new_or_changed_rollout_files() {
+        let temp = tempfile::tempdir().unwrap();
+        let codex_home = temp.path().join("codex");
+        let db_path = temp.path().join("ledger.sqlite");
+        let sessions = codex_home
+            .join("sessions")
+            .join("2026")
+            .join("06")
+            .join("15");
+        fs::create_dir_all(&sessions).unwrap();
+        let session_path = sessions.join("rollout-2026-06-15T01-00-00-session-5.jsonl");
+        fs::write(
+            &session_path,
+            r#"{"timestamp":"2026-06-15T01:00:00.000Z","type":"session_meta","payload":{"id":"session-5","timestamp":"2026-06-15T01:00:00.000Z","cwd":"D:\\Projects\\alpha","model":"gpt-5.4"}}
+{"timestamp":"2026-06-15T01:01:00.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":10,"cached_input_tokens":0,"output_tokens":5,"reasoning_output_tokens":0,"total_tokens":15},"last_token_usage":{"input_tokens":10,"cached_input_tokens":0,"output_tokens":5,"reasoning_output_tokens":0,"total_tokens":15}}}}"#,
+        )
+        .unwrap();
+
+        let first = refresh_database(&db_path, &codex_home).unwrap();
+        assert_eq!(first.scanned_files, 1);
+        assert_eq!(first.parsed_files, 1);
+        assert_eq!(first.unchanged_files, 0);
+
+        let second = refresh_database(&db_path, &codex_home).unwrap();
+        assert_eq!(second.scanned_files, 1);
+        assert_eq!(second.parsed_files, 0);
+        assert_eq!(second.unchanged_files, 1);
+        assert_eq!(second.summary.total_tokens, 15);
+
+        fs::write(
+            &session_path,
+            r#"{"timestamp":"2026-06-15T01:00:00.000Z","type":"session_meta","payload":{"id":"session-5","timestamp":"2026-06-15T01:00:00.000Z","cwd":"D:\\Projects\\alpha","model":"gpt-5.5"}}
+{"timestamp":"2026-06-15T01:02:00.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":30,"cached_input_tokens":10,"output_tokens":7,"reasoning_output_tokens":1,"total_tokens":37},"last_token_usage":{"input_tokens":30,"cached_input_tokens":10,"output_tokens":7,"reasoning_output_tokens":1,"total_tokens":37}}}}"#,
+        )
+        .unwrap();
+
+        let third = refresh_database(&db_path, &codex_home).unwrap();
+        assert_eq!(third.parsed_files, 1);
+        assert_eq!(third.unchanged_files, 0);
+        assert_eq!(third.summary.total_tokens, 37);
+        assert_eq!(third.sessions[0].model.as_deref(), Some("gpt-5.5"));
     }
 }
