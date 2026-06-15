@@ -10,6 +10,7 @@ Token Ledger is unofficial and is not affiliated with OpenAI. It is a community 
 
 - [About Token Ledger](about.md)
 - [Release and downloads](release.md)
+- [Changelog](changelog.md)
 - [Contributing guide](contributing.md)
 - [Reporting problems and pull requests](docs/reporting-problems-and-pull-requests.md)
 - [Local verification and packaging](docs/local-verification.md)
@@ -28,6 +29,16 @@ Codex can create many local sessions across different projects and models. The r
 - What is the estimated cost based on a pricing snapshot?
 
 Token Ledger turns those local records into searchable, filterable reports. The goal is to make Codex usage easier to understand without uploading private session history to another service.
+
+## Screenshots
+
+Overview dashboard with project, model, and session filters:
+
+![Token Ledger overview dashboard](docs/screenshots/token-ledger-overview.png)
+
+Daily usage and model cost tables:
+
+![Token Ledger daily usage report](docs/screenshots/token-ledger-daily-usage.png)
 
 ## Features
 
@@ -176,6 +187,7 @@ npm run tauri build -- --target x86_64-pc-windows-gnu
 - `token-ledger-build/` - generated Windows executable and installer artifacts.
 - `release-packages/` - portable package and checksum manifest.
 - `docs/` - community, contribution, and local verification documentation.
+- `docs/screenshots/` - README and release screenshots.
 - `.github/` - issue templates and pull request template.
 
 ## Community And Contributions
