@@ -1,50 +1,69 @@
 # Token Ledger
 
-Token Ledger is a local-first desktop app for tracking Codex token usage across sessions, projects, days, and models. It is built with Tauri, React, TypeScript, and Rust so it can run as a small native desktop app while keeping your usage data on your device.
+Token Ledger is a local-first desktop app for tracking Codex token usage across local sessions, projects, days, and models. It reads Codex session records from your device, keeps those source files read-only, and turns the usage data into a dashboard with exact whole-token counts and estimated costs.
 
-The app is designed for people who want a clear breakdown of how much token volume their Codex work is using: input tokens, output tokens, cached input tokens, reasoning output tokens, session totals, daily totals, project totals, and model-level cost estimates.
+It is built with Tauri, React, TypeScript, and Rust so the app can run as a small native desktop tool while keeping your Codex history on your machine.
 
-Token Ledger is not affiliated with OpenAI. It reads local Codex session data from your machine and presents it in a dashboard.
+Token Ledger is unofficial and is not affiliated with OpenAI. It is a community project for developers and teams who want clearer visibility into local Codex usage.
 
-## Why This Exists
-
-Codex sessions can span many projects and models. The raw session data is useful, but it is not easy to scan by day, project, model, or session without a dedicated tool. Token Ledger turns those local records into a readable dashboard that helps you understand usage patterns, compare projects, and estimate cost impact.
-
-## Project Pages
+## Quick Links
 
 - [About Token Ledger](about.md)
 - [Release and downloads](release.md)
 - [Contributing guide](contributing.md)
-- [GitHub Actions](docs/github-actions.md)
 - [Reporting problems and pull requests](docs/reporting-problems-and-pull-requests.md)
+- [GitHub Actions and packaging](docs/github-actions.md)
 - [Security policy](security.md)
+- [License](license.md)
+
+## What This App Is About
+
+Codex can create many local sessions across different projects and models. The raw records are useful, but they are not easy to read when you want to answer questions like:
+
+- How many tokens did I use today?
+- Which project used the most tokens this week?
+- Which sessions were the largest?
+- Which model generated the most usage?
+- How many input, output, cached input, and reasoning output tokens were recorded?
+- What is the estimated cost based on a pricing snapshot?
+
+Token Ledger turns those local records into searchable, filterable reports. The goal is to make Codex usage easier to understand without uploading private session history to another service.
 
 ## Features
 
-- Local desktop app built with Tauri, React, TypeScript, and Rust.
-- Read-only Codex session scanning. The scanner reads source session files and stores its own local cache; it does not modify Codex sessions.
-- Incremental imports. Previously scanned files are cached, and unchanged files are skipped on later refreshes.
-- Offline history support. Sessions created while the app was closed are picked up on the next scan.
-- Project breakdowns for every detected Codex workspace.
-- Session picker for all sessions, one project, one model, or one selected session.
-- Daily usage report with exact whole-token values.
-- Model breakdown for GPT/Codex model usage when model data is present in the session file.
-- Input, output, cached input, reasoning output, and total token counts.
-- Estimated API and Codex credit costs from the app pricing snapshot.
+- Local desktop app powered by Tauri, React, TypeScript, and Rust.
+- Read-only Codex session scanning. Source session files are never rewritten.
+- Incremental imports. Previously scanned unchanged files are skipped for faster reloads.
+- Offline history support. Sessions created while Token Ledger was closed are picked up on the next scan.
+- Dashboard summaries for all usage, selected projects, selected sessions, selected models, and daily activity.
+- Project, session, model, and day breakdowns.
+- Exact whole-token totals for input, cached input, output, reasoning output, and combined tokens.
+- Estimated API and Codex credit cost reporting from the app pricing snapshot.
+- Session picker for all sessions, project-scoped sessions, and single-session review.
 - Tooltip charts for daily usage and model share.
 - CSV export for filtered session data.
 - Copyable usage summary.
 - Settings/status panel with Codex home, local database path, parsed file count, unchanged file count, skipped file count, and last imported time.
-- Simple black-and-white flat app icon for taskbar, shortcut, installer, and repository assets.
-- Root build folder with a ready-to-run Windows executable and installers.
+- Boot loading skeleton so the app does not look stuck while it scans and loads cached data.
+- Simple black-and-white flat vector icon for the app, taskbar, shortcut, and installer.
+- Windows portable package and installer artifacts.
+- GitHub issue templates, pull request template, and CI workflow for community contributions.
 
-## What Token Ledger Tracks
+## How It Works
 
-Token Ledger reads local Codex session records and extracts:
+Token Ledger has a simple local data flow:
+
+```text
+local codex session files -> read-only scanner -> token ledger app database -> dashboard reports
+```
+
+The scanner reads local Codex session records and extracts token-count events when they are present. Token Ledger stores its own import cache and usage database so future launches can load quickly and only update records that changed or were newly created.
+
+The app tracks:
 
 - Session id and title.
 - Project path and project name.
-- Model name when present.
+- Model name when present in the session data.
 - Session start and update timestamps.
 - Input tokens.
 - Cached input tokens.
@@ -54,56 +73,57 @@ Token Ledger reads local Codex session records and extracts:
 - Per-event token updates inside a session.
 - Source file path for traceability.
 
-The app keeps the source files read-only. Its own local database is used for fast reloads and incremental refreshes.
+Token Ledger does not modify Codex session files. If a session format changes or a record cannot be parsed, the source file stays untouched and the app reports scanner status counts in Settings.
 
 ## Privacy And Safety
 
-Token Ledger is local-first:
+Token Ledger is local-first by design:
 
-- It does not require a cloud account.
-- It does not send your session data to a server.
-- It does not edit Codex session files.
-- It keeps a local app database for cached imports.
-- The source path for each session is shown so you can audit what was read.
+- No cloud account is required.
+- No hosted service is required.
+- Session data is not uploaded by the app.
+- Codex session files are opened for reading, not editing.
+- Imported data is stored in a local app database for speed.
 
-The dashboard can still display sensitive project names or file paths from your local Codex sessions. Be careful when sharing screenshots or exports.
+The dashboard can still show sensitive local information such as project names, session titles, file paths, and prompt-derived titles. Review screenshots, logs, and exports before sharing them publicly.
 
-## Pricing Notes
+## Pricing And Accuracy
 
-Token Ledger includes a pricing snapshot for estimating model costs. Pricing changes over time, so treat cost output as an estimate unless you have verified the active rates for your account and model.
+Token counts are read from local Codex session records and are displayed as whole numbers. Token Ledger does not round token totals.
 
-Token counts come from local Codex session records. Cost estimates are calculated from those counts and the app's pricing table.
+Cost values are estimates. They are calculated from the counts Token Ledger can read and the pricing snapshot bundled with the app. Model pricing can change over time and may differ by account, plan, product surface, or billing rules, so use the cost report as a planning estimate instead of an official bill.
 
 ## Download And Run
 
-This repository currently includes Windows build artifacts in `token-ledger-build`.
+The current packaged build is `0.1.0` for Windows x64. See [release.md](release.md) for the download table, checksums, install notes, and known release notes.
 
-For the public download page, see [Token Ledger 0.1.0 Release](release.md).
+Recommended download:
 
-Useful files:
+- [token-ledger-0.1.0-windows-x64-portable.zip](release-packages/token-ledger-0.1.0-windows-x64-portable.zip)
 
-- `release-packages/token-ledger-0.1.0-windows-x64-portable.zip` - recommended portable download package.
-- `token-ledger-build/token-ledger.exe` - portable app executable.
-- `token-ledger-build/token-ledger-0.1.0-x64-setup.exe` - Windows setup installer.
-- `token-ledger-build/token-ledger-0.1.0-x64.msi` - Windows MSI installer.
-- `release-packages/token-ledger-0.1.0-windows-x64-checksums-sha256.txt` - SHA-256 checksum manifest.
-- `open-token-ledger.cmd` - convenience launcher for the local build.
-- `assets/token-ledger-flat-icon.svg` - editable vector app icon source.
+Other available Windows artifacts:
 
-On Windows, you can run:
+- [token-ledger.exe](token-ledger-build/token-ledger.exe)
+- [token-ledger-0.1.0-x64-setup.exe](token-ledger-build/token-ledger-0.1.0-x64-setup.exe)
+- [token-ledger-0.1.0-x64.msi](token-ledger-build/token-ledger-0.1.0-x64.msi)
+- [sha-256 checksums](release-packages/token-ledger-0.1.0-windows-x64-checksums-sha256.txt)
+
+For a local checkout on Windows, you can also run:
 
 ```powershell
 .\open-token-ledger.cmd
 ```
 
-## Development
+Windows may show a SmartScreen warning because the app is not code-signed yet.
+
+## Development Setup
 
 Prerequisites:
 
 - Node.js.
 - Rust.
 - Tauri build prerequisites for your operating system.
-- WebView2 Runtime on Windows.
+- Microsoft Edge WebView2 Runtime on Windows.
 
 Install dependencies:
 
@@ -111,13 +131,13 @@ Install dependencies:
 npm install
 ```
 
-Run the web dev server:
+Run the web app:
 
 ```powershell
 npm run dev
 ```
 
-Run the Tauri app in development:
+Run the Tauri desktop app in development:
 
 ```powershell
 npm run tauri dev
@@ -141,7 +161,7 @@ Build the desktop app:
 npm run tauri build
 ```
 
-On this Windows setup, the GNU target was used for the native build:
+On the current Windows package, the GNU target was used for the native build:
 
 ```powershell
 npm run tauri build -- --target x86_64-pc-windows-gnu
@@ -151,32 +171,68 @@ npm run tauri build -- --target x86_64-pc-windows-gnu
 
 - `src/` - React dashboard, charts, filters, tables, and usage model logic.
 - `src-tauri/` - Tauri app shell and Rust session scanner.
-- `assets/` - source app icon assets.
+- `assets/` - editable icon and source app assets.
 - `public/` - frontend public assets.
-- `token-ledger-build/` - generated Windows executable and installers.
-- `docs/` - community and contribution guides.
-- `.github/` - GitHub issue and pull request templates.
+- `token-ledger-build/` - generated Windows executable and installer artifacts.
+- `release-packages/` - portable package and checksum manifest.
+- `docs/` - community, contribution, and GitHub Actions documentation.
+- `.github/` - issue templates, pull request template, and CI workflow.
 
-## Community
+## Community And Contributions
 
-Token Ledger is intended to be community driven. Useful contributions include:
+Token Ledger is intended to be a community-driven tool. Contributions are welcome for bug fixes, parser coverage, pricing updates, new reports, documentation, packaging, accessibility, and performance.
 
-- Parser improvements for new Codex session formats.
-- Better model detection.
-- Updated pricing snapshots.
+Good first contributions:
+
+- Improve README or release documentation.
+- Add screenshots or short usage examples.
+- Improve empty states and loading states.
+- Add parser tests for sanitized session examples.
+- Improve keyboard navigation and accessibility.
+- Add Linux or macOS packaging notes.
+- Update model pricing snapshots with clear source notes.
+
+Before opening an issue or pull request:
+
+1. Read [contributing.md](contributing.md).
+2. Read [docs/reporting-problems-and-pull-requests.md](docs/reporting-problems-and-pull-requests.md).
+3. Remove private prompts, secrets, customer data, proprietary code, and sensitive paths from screenshots or sample files.
+4. Run the relevant checks for your change.
+
+Recommended checks:
+
+```powershell
+npm test
+npm run build
+```
+
+If you change the Rust scanner, also run:
+
+```powershell
+cargo test --manifest-path src-tauri\Cargo.toml --release usage::tests -- --nocapture
+```
+
+GitHub Actions runs the main checks on pushes and pull requests. See [docs/github-actions.md](docs/github-actions.md).
+
+## Roadmap Ideas
+
+Useful future work includes:
+
+- Broader parser coverage for old and new Codex session formats.
+- Better model normalization and pricing metadata.
+- More chart types and report views.
 - More export formats.
-- Better reports and charts.
-- Cross-platform packaging.
-- Accessibility improvements.
-- Documentation improvements.
-- Bug reports with safe sample data.
-
-Start with `contributing.md` and `docs/reporting-problems-and-pull-requests.md`.
+- Cross-platform release packages for macOS and Linux.
+- Optional signed installers.
+- More automated regression tests for scanner edge cases.
+- Public sample fixtures with private data removed.
 
 ## Search Keywords
 
 Codex token tracker, ChatGPT token tracker, OpenAI token usage dashboard, AI token usage tracker, local token usage analytics, Codex usage monitor, GPT token counter, LLM token tracker, cached token tracker, prompt token dashboard, AI cost estimator, OpenAI cost tracker, Tauri token tracker, desktop token analytics, local-first AI usage dashboard, project token reports, session token reports, daily token reports, model token breakdown, Codex session analyzer.
 
+Package keywords are also defined in [package.json](package.json) for npm and repository search metadata.
+
 ## License
 
-Token Ledger is released under the MIT License. You can use it, copy it, modify it, distribute it, use it commercially, sell services around it, or build paid products from it, as long as you keep the license notice. See `license.md`.
+Token Ledger is released under the MIT License. You can use it, copy it, modify it, distribute it, use it commercially, sell services around it, or build paid products from it, as long as the license notice is kept. See [license.md](license.md).
