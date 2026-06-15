@@ -81,9 +81,11 @@ For the public download page, see [Token Ledger 0.1.0 Release](release.md).
 
 Useful files:
 
+- `release-packages/token-ledger-0.1.0-windows-x64-portable.zip` - recommended portable download package.
 - `token-ledger-build/token-ledger.exe` - portable app executable.
 - `token-ledger-build/token-ledger-0.1.0-x64-setup.exe` - Windows setup installer.
 - `token-ledger-build/token-ledger-0.1.0-x64.msi` - Windows MSI installer.
+- `release-packages/token-ledger-0.1.0-windows-x64-checksums-sha256.txt` - SHA-256 checksum manifest.
 - `open-token-ledger.cmd` - convenience launcher for the local build.
 - `assets/token-ledger-flat-icon.svg` - editable vector app icon source.
 
