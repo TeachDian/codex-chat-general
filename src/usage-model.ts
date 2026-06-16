@@ -1,4 +1,4 @@
-export type DateRange = "7d" | "30d" | "all";
+export type DateRange = "1d" | "7d" | "30d" | "all";
 
 export interface TokenUsage {
   input_tokens: number;
@@ -338,7 +338,7 @@ export function filterSessionsByRange(
   }
 
   const now = new Date(nowIso).getTime();
-  const days = range === "7d" ? 7 : 30;
+  const days = range === "1d" ? 1 : range === "7d" ? 7 : 30;
   const cutoff = now - days * 24 * 60 * 60 * 1000;
 
   return sessions.filter((session) => {

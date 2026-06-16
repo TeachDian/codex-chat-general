@@ -48,10 +48,12 @@ Daily usage and model cost tables:
 - Offline history support. Sessions created while Token Ledger was closed are picked up on the next scan.
 - Dashboard summaries for all usage, selected projects, selected sessions, selected models, and daily activity.
 - Project, session, model, and day breakdowns.
+- 1D, 7D, 30D, and all-time report ranges.
 - Exact whole-token totals for input, cached input, output, reasoning output, and combined tokens.
 - Estimated API and Codex credit cost reporting from the app pricing snapshot.
 - Session picker for all sessions, project-scoped sessions, and single-session review.
 - Tooltip charts for daily usage and model share.
+- Sortable, filterable, paginated, scroll-safe report tables.
 - CSV export for filtered session data.
 - Copyable usage summary.
 - Settings/status panel with Codex home, local database path, parsed file count, unchanged file count, skipped file count, and last imported time.

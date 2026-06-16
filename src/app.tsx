@@ -21,6 +21,7 @@ import { BootSkeleton } from "./components/boot-skeleton";
 import { ModelCostTable } from "./components/model-cost-table";
 import { ModelShareChart } from "./components/model-share-chart";
 import { ProjectTable } from "./components/project-table";
+import { ReportBreakdown } from "./components/report-breakdown";
 import { SessionDetail } from "./components/session-detail";
 import { SessionTable } from "./components/session-table";
 import { UsageChart } from "./components/usage-chart";
@@ -258,7 +259,7 @@ function App() {
               {status === "refreshing" ? "Importing sessions" : status === "loading" ? "Loading" : status === "error" ? "Needs attention" : "Synced"}
             </div>
             <div className="range-control" aria-label="Date range">
-              {(["7d", "30d", "all"] as DateRange[]).map((option) => (
+              {(["1d", "7d", "30d", "all"] as DateRange[]).map((option) => (
                 <button
                   className={range === option ? "active" : ""}
                   key={option}
@@ -407,6 +408,8 @@ function App() {
               </p>
             </section>
 
+            <ReportBreakdown dashboard={dashboard} estimatedApiCost={estimatedApiCost} />
+
             <section className="content-grid">
               <div className="main-column">
                 <div id="daily-usage">
@@ -421,14 +424,14 @@ function App() {
                       setSelectedProjectPath(projectPath);
                       setSelectedSessionId("all");
                     }}
-                    projects={dashboard.project_usage.slice(0, 50)}
+                    projects={dashboard.project_usage}
                   />
                 </div>
                 <div id="sessions">
                   <SessionTable
                     onSelect={handleSelectSession}
                     selectedId={selectedSession?.id ?? null}
-                    sessions={dashboard.sessions.slice(0, 250)}
+                    sessions={dashboard.sessions}
                   />
                 </div>
                 <section className="panel settings-panel" id="settings">

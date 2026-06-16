@@ -46,14 +46,21 @@ describe("usage model helpers", () => {
   it("filters sessions by the selected rolling date range", () => {
     const sessions = [
       makeSession("recent", "2026-06-14T12:00:00.000Z"),
+      makeSession("yesterday-plus", "2026-06-14T01:00:00.000Z"),
       makeSession("old", "2026-05-01T12:00:00.000Z"),
     ];
 
+    expect(filterSessionsByRange(sessions, "1d", "2026-06-15T00:00:00.000Z").map((s) => s.id)).toEqual([
+      "recent",
+      "yesterday-plus",
+    ]);
     expect(filterSessionsByRange(sessions, "7d", "2026-06-15T00:00:00.000Z").map((s) => s.id)).toEqual([
       "recent",
+      "yesterday-plus",
     ]);
     expect(filterSessionsByRange(sessions, "all", "2026-06-15T00:00:00.000Z").map((s) => s.id)).toEqual([
       "recent",
+      "yesterday-plus",
       "old",
     ]);
   });

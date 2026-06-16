@@ -2,6 +2,14 @@
 
 All notable changes to Token Ledger are tracked here.
 
+## Unreleased
+
+### Added
+
+- 1D report range for short-window usage review.
+- Report breakdown panel for cache rate, output share, reasoning share, average tokens per session, peak day, top model, top project, and latest session.
+- Sortable, filterable, paginated, scroll-safe tables for sessions, projects, model costs, and daily costs.
+
 ## 0.1.0 - 2026-06-15
 
 First public Windows x64 release.
